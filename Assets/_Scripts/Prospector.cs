@@ -23,6 +23,7 @@ public class Prospector : MonoBehaviour
     public List<CardProspector> drawPile;
     public List<CardProspector> discardPile;
 
+
     private void Awake() {
         P = this;
     }
@@ -46,7 +47,6 @@ public class Prospector : MonoBehaviour
         LayoutGame();
     }
 
-
     private List<CardProspector> ConvertCardsToCardProspectors(List<Card> cards)
     {
         List<CardProspector> lCP = new List<CardProspector>();
@@ -60,14 +60,15 @@ public class Prospector : MonoBehaviour
 
         return lCP;
     }
-    CardProspector Draw()
+    
+    CardProspector Draw() 
     {
         CardProspector cd = drawPile[0];
         drawPile.RemoveAt(0);
 
         return cd;
     }
-
+    
     private void LayoutGame()
     {
         if (layoutAnchor == null)
@@ -93,6 +94,85 @@ public class Prospector : MonoBehaviour
             cp.SetSortingLayerName(tSD.layerName);
 
             tableau.Add(cp);
+        }
+
+        MoveToTarget(Draw());
+        UpdateDrawPile();
+    }
+    
+    private void MoveToDiscard(CardProspector cd)
+    {
+        cd.state = eCardState.discard;
+        discardPile.Add(cd);
+        cd.transform.parent = layoutAnchor;
+
+        cd.transform.localPosition = new Vector3(layout.multiplier.x * layout.discardPile.x,
+                                                 layout.multiplier.y * layout.discardPile.y,
+                                                 -layout.discardPile.layerID + 0.5f);
+
+        cd.faceUp = true;
+        cd.SetSortingLayerName(layout.discardPile.layerName);
+        cd.SetSortOrder(-100 + discardPile.Count);
+    }
+
+    private void MoveToTarget(CardProspector cd)
+    {
+        if (target != null)
+        {
+            MoveToDiscard(target);
+        }
+
+        target = cd;
+        cd.state = eCardState.target;
+        cd.transform.parent = layoutAnchor;
+
+        cd.transform.localPosition = new Vector3(layout.multiplier.x * layout.discardPile.x,
+                                                 layout.multiplier.y * layout.discardPile.y,
+                                                 -layout.discardPile.layerID);
+
+        cd.faceUp = true;
+        cd.SetSortingLayerName(layout.discardPile.layerName);
+        cd.SetSortOrder(0);
+    }
+
+    private void UpdateDrawPile()
+    {
+        CardProspector cd;
+
+        for (int i = 0; i < drawPile.Count; i++)
+        {
+            cd = drawPile[i];
+            cd.transform.parent = layoutAnchor;
+
+            Vector2 dpStagger = layout.drawPile.stagger;
+
+            float xCoord = layout.multiplier.x * (layout.drawPile.x + i * dpStagger.x);
+            float yCoord = layout.multiplier.y * (layout.drawPile.y + i * dpStagger.y);
+            float zCoord = -layout.drawPile.layerID + 0.1f * i;
+            cd.transform.localPosition = new Vector3(xCoord, yCoord, zCoord);
+
+            cd.faceUp = false;
+            cd.state = eCardState.drawpile;
+            cd.SetSortingLayerName(layout.discardPile.layerName);
+            cd.SetSortOrder(-10 * i);
+        }
+    }
+
+    public void CardClicked(CardProspector cd)
+    {
+        switch (cd.state)
+        {
+            case eCardState.target:
+                break;
+            
+            case eCardState.drawpile:
+                MoveToDiscard(target);
+                MoveToTarget(Draw());
+                UpdateDrawPile();
+                break;
+
+            case eCardState.tableau:
+                break;
         }
     }
 }

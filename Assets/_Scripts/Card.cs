@@ -51,7 +51,7 @@ public class Card : MonoBehaviour
         }
     }
 
-    private void SetSortOrder(int sOrd)
+    public void SetSortOrder(int sOrd)
     {
         PopulateSpriteRenderers();
 
@@ -81,5 +81,9 @@ public class Card : MonoBehaviour
     {
         get { return !back.activeSelf; }
         set { back.SetActive(!value); }
+    }
+
+    virtual public void OnMouseUpAsButton() {
+        print(name);
     }
 }
