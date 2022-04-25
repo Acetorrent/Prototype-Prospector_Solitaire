@@ -1,6 +1,6 @@
 using UnityEngine;
+using UnityEngine.SceneManagement;
 using System.Collections.Generic;
-using System;
 
 public class Prospector : MonoBehaviour
 {
@@ -96,10 +96,32 @@ public class Prospector : MonoBehaviour
             tableau.Add(cp);
         }
 
+        foreach (CardProspector tCP in tableau)
+        {
+            foreach (int hiddenID in tCP.slotDef.hiddenBy)
+            {
+                cp = FindCardByLayoutID(hiddenID);
+                tCP.hiddenBy.Add(cp);
+            }
+        }
+
         MoveToTarget(Draw());
         UpdateDrawPile();
     }
-    
+
+    private CardProspector FindCardByLayoutID(int layoutID)
+    {
+        foreach (CardProspector tCP in tableau)
+        {
+            if (tCP.layoutID == layoutID)
+            {
+                return tCP;
+            }
+        }
+
+        return null;
+    }
+
     private void MoveToDiscard(CardProspector cd)
     {
         cd.state = eCardState.discard;
@@ -169,10 +191,111 @@ public class Prospector : MonoBehaviour
                 MoveToDiscard(target);
                 MoveToTarget(Draw());
                 UpdateDrawPile();
+                ScoreManager.EVENT(eScoreEvent.draw);
+            
                 break;
 
             case eCardState.tableau:
+                bool validMatch = true;
+                
+                if (!cd.faceUp)
+                {
+                    validMatch = false;
+                }
+
+                if (!AdjacentRank(cd, target))
+                {
+                    validMatch = false;
+                }
+
+                if (!validMatch) return;
+
+                tableau.Remove(cd);
+                MoveToTarget(cd);
+                SetTableauFaces();
+                ScoreManager.EVENT(eScoreEvent.mine);
+
+
                 break;
         }
+
+        CheckForGameOver();
+    }
+
+    private void CheckForGameOver()
+    {   
+        // Check if the tableau is empty
+        if (tableau.Count == 0)
+        {
+            GameOver(true);
+            return;
+        }
+
+        // Check if there are still cards to draw
+        if (drawPile.Count > 0)
+        {
+            return;
+        }
+
+        // Check for valid plays
+        foreach (CardProspector cd in tableau)
+        {
+            if (AdjacentRank(cd, target))
+            {
+                return;
+            }
+        }
+
+        GameOver(false);
+    }
+
+    private void GameOver(bool won)
+    {
+        if (won)
+        {
+            ScoreManager.EVENT(eScoreEvent.gameWin);
+        }
+        else
+        {
+            ScoreManager.EVENT(eScoreEvent.gameLoss);
+        }
+
+        SceneManager.LoadScene("__Prospector_Scene_0");
+    }
+    
+    private void SetTableauFaces()
+    {
+        foreach (CardProspector cd in tableau)
+        {
+            bool faceUp = true;
+
+            // If any of the covering cards are still in the tableau, 
+            //  the card is face down.
+            foreach (CardProspector cover in cd.hiddenBy)
+            {
+                if (cover.state == eCardState.tableau)
+                {
+                    faceUp = false;
+                }
+            }
+
+            cd.faceUp = faceUp;
+        }
+    }
+
+    private bool AdjacentRank(CardProspector cd, CardProspector target)
+    {   
+        // If either card is face-down, it's not adjacent
+        if (!cd.faceUp || !target.faceUp) return false;
+        
+        // If card rank is 1 rank apart
+        if (Mathf.Abs(cd.rank - target.rank) == 1) return true;
+
+        // If one card is an Ace and the other a King
+        if (cd.rank == 1 && target.rank == 13) return true;
+        if (cd.rank == 13 && target.rank == 1) return true;
+
+        // Default case
+        return false;
     }
 }
