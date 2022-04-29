@@ -4,6 +4,7 @@ This project is a Unity Example Game from the book [Introduction to Game Design,
 
 It is a card game prototype, inspired by the [Tri-peaks solitaire game](https://en.wikipedia.org/wiki/Tri_Peaks_(game)).
 
+You can play it [here!](https://shaman37.itch.io/prototype-prospector-solitaire)
 ## How to play
 
 ![Prospector](https://user-images.githubusercontent.com/17680666/165343805-8324ff3d-4930-47c2-94f9-3cf30b6754e3.png)
